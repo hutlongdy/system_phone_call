@@ -1,1 +1,2097 @@
 
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  <style>
+    :root {
+      --bg-body: #f4f6f9;
+      --bg-card: #ffffff;
+      --bg-input: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #6c757d;
+      --border-color: #dee2e6;
+      --shadow-color: rgba(0,0,0,0.06);
+      --route-hover: #f1f5f9;
+      --route-active-bg: #fef3c7;
+      --table-head-bg: #f8f9fa;
+      --badge-light-bg: #f8f9fa;
+      --badge-light-text: #1e293b;
+      --grid-line: rgba(0,0,0,0.08);
+      --chart-tick: #495057;
+    }
+    [data-theme="dark"] {
+      --bg-body: #0f172a;
+      --bg-card: #1e293b;
+      --bg-input: #273349;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --shadow-color: rgba(0,0,0,0.35);
+      --route-hover: #273349;
+      --route-active-bg: #4a3f1a;
+      --table-head-bg: #273349;
+      --badge-light-bg: #334155;
+      --badge-light-text: #e2e8f0;
+      --grid-line: rgba(255,255,255,0.08);
+      --chart-tick: #cbd5e1;
+    }
+    body { background-color: var(--bg-body); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text-main); transition: background-color 0.2s, color 0.2s; }
+    h1, h2, h3, h4, h5, h6 { color: var(--text-main) !important; }
+    .card-metric { border: none; border-radius: 10px; box-shadow: 0 1px 4px var(--shadow-color); background-color: var(--bg-card) !important; }
+    .metric-value { font-size: 1.8rem; font-weight: 700; }
+    .card-chart { border: none; border-radius: 10px; box-shadow: 0 1px 4px var(--shadow-color); background-color: var(--bg-card) !important; }
+    .filter-badge { cursor: pointer; transition: 0.2s; }
+    .filter-badge:hover { opacity: 0.8; }
+    .route-item { font-size: 0.82rem; display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding: 3px 4px; cursor: pointer; border-radius: 4px; color: var(--text-main); }
+    .route-item:hover { background-color: var(--route-hover); }
+    .route-item.active-route { background-color: var(--route-active-bg); font-weight: bold; }
+    canvas { cursor: pointer !important; }
+
+    .table-responsive::-webkit-scrollbar { width: 8px; height: 8px; }
+    .table-responsive::-webkit-scrollbar-track { background: var(--bg-card); }
+    .table-responsive::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 4px; }
+
+    .pagination-wrap { display: flex; align-items: center; gap: 4px; background: var(--bg-input); padding: 5px; border-radius: 10px; border: 1px solid var(--border-color); }
+    .page-btn { background: transparent; border: none; color: var(--text-muted); width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.95rem; }
+    .page-btn:hover:not(:disabled) { background: var(--route-hover); color: var(--text-main); }
+    .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-current { background: #f59e0b; color: #1e293b; font-weight: 700; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+    .page-size-select { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 10px; padding: 6px 10px; font-size: 0.85rem; cursor: pointer; }
+    .page-size-select:focus { outline: none; box-shadow: 0 0 0 2px rgba(245,158,11,0.3); }
+
+    .text-muted { color: var(--text-muted) !important; }
+    .text-dark { color: var(--text-main) !important; }
+    .bg-white { background-color: var(--bg-card) !important; }
+    .border { border-color: var(--border-color) !important; }
+    .form-control, .form-select { background-color: var(--bg-input) !important; color: var(--text-main) !important; border-color: var(--border-color) !important; }
+    .table-responsive { background-color: var(--bg-card); }
+    .table { color: var(--text-main); background-color: var(--bg-card); }
+    .table > :not(caption) > * > * { background-color: var(--bg-card) !important; color: var(--text-main) !important; box-shadow: none !important; border-bottom-color: var(--border-color) !important; }
+    .table-light, .table-hover > tbody > tr:hover > * { background-color: var(--table-head-bg) !important; color: var(--text-main) !important; }
+    .badge.bg-light { background-color: var(--badge-light-bg) !important; color: var(--badge-light-text) !important; }
+    .badge.border { border-color: var(--border-color) !important; }
+    code.text-danger { color: #f87171 !important; }
+
+    .theme-toggle-btn { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; background-color: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer; }
+    .theme-toggle-btn:hover { opacity: 0.85; }
+
+    .kpi-full { border: none !important; color: #ffffff !important; }
+    .kpi-full .text-muted, .kpi-full .metric-value, .kpi-full span { color: #ffffff !important; }
+    .kpi-full .text-muted { opacity: 0.85; }
+    .kpi-full.kpi-blue   { background: linear-gradient(135deg, #3b82f6, #2563eb) !important; }
+    .kpi-full.kpi-red    { background: linear-gradient(135deg, #f87171, #dc2626) !important; }
+    .kpi-full.kpi-cyan   { background: linear-gradient(135deg, #22d3ee, #0891b2) !important; }
+    .kpi-full.kpi-green  { background: linear-gradient(135deg, #34d399, #059669) !important; }
+    .kpi-full.kpi-amber  { background: linear-gradient(135deg, #fbbf24, #d97706) !important; }
+    .kpi-full.kpi-purple { background: linear-gradient(135deg, #a78bfa, #7c3aed) !important; }
+    .kpi-full .route-item { border-bottom: 1px dashed rgba(255,255,255,0.35); color: #ffffff; }
+    .kpi-full .route-item:hover { background-color: rgba(255,255,255,0.15); }
+    .kpi-full .route-item.active-route { background-color: rgba(255,255,255,0.3); }
+    .kpi-full .badge.bg-light { background-color: rgba(255,255,255,0.25) !important; color: #ffffff !important; border-color: rgba(255,255,255,0.4) !important; }
+
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+    .status-dot-pending { background: #e2e8f0; }
+    .status-dot-approved { background: #34d399; }
+    .status-dot-rejected { background: #f87171; }
+
+    .status-badge { font-size: 0.72rem; padding: 4px 9px; border-radius: 20px; font-weight: 600; }
+    .status-pending { background: rgba(148,163,184,0.2); color: #64748b; }
+    .status-approved { background: rgba(16,185,129,0.15); color: #059669; }
+    .status-rejected { background: rgba(239,68,68,0.15); color: #dc2626; }
+    .btn-approve { background: #10b981; border: none; color: #fff; }
+    .btn-approve:hover:not(:disabled) { background: #059669; color: #fff; }
+    .btn-reject { background: #ef4444; border: none; color: #fff; }
+    .btn-reject:hover:not(:disabled) { background: #dc2626; color: #fff; }
+    .btn-approve:disabled, .btn-reject:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-edit { background: #6366f1; border: none; color: #fff; }
+    .btn-edit:hover:not(:disabled) { background: #4f46e5; color: #fff; }
+    .btn-delete { background: #64748b; border: none; color: #fff; }
+    .btn-delete:hover:not(:disabled) { background: #475569; color: #fff; }
+
+    .penalty-amount { color: #dc2626; }
+    [data-theme="dark"] .penalty-amount { color: #f87171; }
+
+    .btn-telegram { background: #229ed9; border: none; color: #fff; font-weight: 600; }
+    .btn-telegram:hover { background: #1c88ba; color: #fff; }
+    .tg-live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; margin-left: 4px; }
+    .tg-live-dot.on { background: #34d399; box-shadow: 0 0 0 2px rgba(52,211,153,0.3); }
+    .tg-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 2000; align-items: center; justify-content: center; padding: 16px; }
+    .tg-modal { background: var(--bg-card); color: var(--text-main); border-radius: 12px; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.35); }
+    .tg-modal .form-control, .tg-modal .form-select { border: 1px solid var(--border-color); }
+    .tg-msg { font-size: 0.82rem; border-radius: 8px; padding: 8px 10px; margin-top: 10px; display: none; }
+    .tg-msg.ok { display: block; background: rgba(16,185,129,0.15); color: #059669; }
+    .tg-msg.err { display: block; background: rgba(239,68,68,0.15); color: #dc2626; }
+    .tg-chat-item { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 10px; font-size: 0.82rem; cursor: pointer; margin-top: 6px; }
+    .tg-chat-item:hover { background: var(--route-hover); }
+    @media print {
+      @page { size: landscape; margin: 10mm; }
+      body { background: #fff !important; color: #111 !important; padding: 0 !important; }
+      #dashboardView, #recordsView { width: 100% !important; }
+      button, input, select, .theme-toggle-btn, .modal, .btn, #filterStatus { display: none !important; }
+      .card, .chart-container, canvas { break-inside: avoid !important; }
+      .card { box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #dashboardView { display: block !important; }
+    }
+  </style>
+</head>
+<body class="p-3 p-md-4">
+
+  <!-- ========================= DASHBOARD VIEW ========================= -->
+  <div id="dashboardView" class="container-fluid">
+
+    <div class="row align-items-center mb-3">
+      <div class="col-md-5 mb-2 mb-md-0">
+        <h3 class="fw-bold mb-0">Ticket Cancellation Dashboard</h3>
+        <small class="text-muted">Live Phone Call Report</small>
+        <div id="filterStatus" class="mt-1 d-flex flex-wrap gap-1"></div>
+      </div>
+
+      <div class="col-md-7 d-flex flex-wrap justify-content-md-end align-items-center gap-2">
+        <button class="btn btn-outline-danger btn-sm fw-semibold" onclick="printDashboard()" title="Print dashboard or save as PDF">🖨 Print / Save</button>
+        <button class="btn btn-telegram btn-sm px-3" onclick="openTelegramModal()" title="Telegram bot service">✈ Telegram <span class="tg-live-dot" id="tgLiveDot"></span></button>
+        <button class="btn btn-outline-danger btn-sm px-3 fw-semibold" onclick="openPendingAlertModal()" title="Send pending alert to Telegram">📢 Pending Alert</button>
+        <div class="d-flex align-items-center gap-1 bg-white px-2 py-1 rounded border">
+          <label class="small text-muted mb-0">From:</label>
+          <input type="date" id="startDate" class="form-control form-control-sm border-0 p-0" onchange="applyFilters()">
+        </div>
+        <div class="d-flex align-items-center gap-1 bg-white px-2 py-1 rounded border">
+          <label class="small text-muted mb-0">To:</label>
+          <input type="date" id="endDate" class="form-control form-control-sm border-0 p-0" onchange="applyFilters()">
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" onclick="resetAllFilters()">Reset Filters</button>
+
+        <button class="btn btn-primary btn-sm px-3" onclick="fetchData()">↻ Refresh</button>
+        <button class="btn btn-warning btn-sm px-3 fw-semibold" onclick="showRecordsView()">📋 All Records</button>
+        <button class="btn btn-success btn-sm px-3 fw-semibold" onclick="toggleMonthlyComparison()" title="Compare cancellation performance month by month">📊 Compare Month</button>
+        <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
+      </div>
+    </div>
+
+    <!-- ========================= MONTHLY COMPARISON ========================= -->
+    <div id="monthlyComparison" class="card card-chart p-3 bg-white mb-4" style="display:none;">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+          <h5 class="fw-bold mb-1">📊 Monthly Cancellation Comparison</h5>
+          <small class="text-muted">Compare cancellation count, lost value, and penalties by month.</small>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <label class="small fw-semibold" for="compareFrom">From:</label>
+          <input type="month" id="compareFrom" class="form-control form-control-sm" style="width:auto" onchange="renderMonthlyComparison()">
+          <label class="small fw-semibold" for="compareTo">To:</label>
+          <input type="month" id="compareTo" class="form-control form-control-sm" style="width:auto" onchange="renderMonthlyComparison()">
+          <label class="small fw-semibold" for="compareYear">Year:</label>
+          <select id="compareYear" class="form-select form-select-sm" style="width:auto;min-width:100px" onchange="setCompareYear()"></select>
+          <button class="btn btn-outline-secondary btn-sm" onclick="renderMonthlyComparison()">↻ Update</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="toggleMonthlyComparison(false)">✕ Close</button>
+        </div>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-md-4"><div class="card card-metric p-3 h-100"><small class="text-muted">Total Cancellations</small><div id="compareTotalCount" class="metric-value">0</div></div></div>
+        <div class="col-md-4"><div class="card card-metric p-3 h-100"><small class="text-muted">Total Lost Value</small><div id="compareTotalAmount" class="metric-value text-danger">$0.00</div></div></div>
+        <div class="col-md-4"><div class="card card-metric p-3 h-100"><small class="text-muted">Total Penalties</small><div id="compareTotalPenalty" class="metric-value">$0.00</div></div></div>
+      </div>
+      <div style="height:320px;position:relative"><canvas id="monthlyCompareChart"></canvas></div>
+      <div class="table-responsive mt-3">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light"><tr><th>Month</th><th class="text-end">Cancellations</th><th class="text-end">Lost Value</th><th class="text-end">Penalties</th><th class="text-end">Count vs Previous Month</th><th class="text-end">Lost Value vs Previous Month</th></tr></thead>
+          <tbody id="monthlyCompareTable"><tr><td colspan="6" class="text-center text-muted py-3">Loading monthly comparison...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-2">
+        <div class="card card-metric kpi-full kpi-blue p-3 h-100">
+          <div class="text-muted small fw-semibold">Total Cancellations</div>
+          <div class="metric-value mt-1" id="kpiTotal">-</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="card card-metric kpi-full kpi-red p-3 h-100">
+          <div class="text-muted small fw-semibold">Total Lost Value</div>
+          <div class="metric-value mt-1" id="kpiAmount">-</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="card card-metric kpi-full kpi-cyan p-3 h-100">
+          <div class="text-muted small fw-semibold">Total Amount Panalites</div>
+          <div class="metric-value mt-1" id="kpiPenalty">-</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="card card-metric kpi-full kpi-green p-3 h-100">
+          <div class="text-muted small fw-semibold">Active Agents</div>
+          <div class="metric-value mt-1" id="kpiAgents">-</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="card card-metric kpi-full kpi-purple p-3 h-100">
+          <div class="text-muted small fw-semibold mb-1">Approval Status <span style="opacity:.8;font-weight:400;">(Click to filter)</span></div>
+          <div class="route-item status-item align-items-center" data-status="Pending" onclick="toggleStatusFilter('Pending')">
+            <span><i class="status-dot status-dot-pending"></i> Pending</span>
+            <strong id="kpiPending">-</strong>
+          </div>
+          <div class="route-item status-item align-items-center" data-status="Approved" onclick="toggleStatusFilter('Approved')">
+            <span><i class="status-dot status-dot-approved"></i> Approved</span>
+            <strong id="kpiApproved">-</strong>
+          </div>
+          <div class="route-item status-item align-items-center" data-status="Rejected" onclick="toggleStatusFilter('Rejected')">
+            <span><i class="status-dot status-dot-rejected"></i> Rejected</span>
+            <strong id="kpiRejected">-</strong>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-2">
+        <div class="card card-metric kpi-full kpi-amber p-3 h-100">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted small fw-semibold">Top 5 Routes</span>
+            <span class="text-muted small fw-bold">Cancelled</span>
+          </div>
+          <div id="topRoutesList">
+            <span class="text-muted small">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-lg-4">
+        <div class="card card-chart p-3 bg-white h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0">Cancellation Cancelled Duration</h6>
+            <small class="text-muted">(Click slice to filter)</small>
+          </div>
+          <div class="d-flex align-items-center justify-content-center" style="height: 280px; position: relative;">
+            <canvas id="durationChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <div class="card card-chart p-3 bg-white h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0">Top 10 Agents by Volume</h6>
+            <small class="text-muted">(Click bar to filter)</small>
+          </div>
+          <div style="height: 280px;">
+            <canvas id="agentChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-chart p-3 bg-white mb-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+        <div>
+          <h6 class="fw-bold mb-1">Cancellation Trend by Date</h6>
+          <small class="text-muted">Daily cancellation count and lost value for the selected date range</small>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <span class="badge bg-light text-dark border" id="trendDateStatus">Updates with date filters · click a date to view records automatically</span>
+        </div>
+      </div>
+      <div style="height: 320px; position: relative;">
+        <canvas id="dateLineChart"></canvas>
+      </div>
+      <small class="text-muted mt-2">Click any point on either line to automatically filter the dashboard to that date and scroll to the matching cancellation records.</small>
+    </div>
+
+    <div class="card card-chart p-3 bg-white mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0">Recent Cancellation Logs</h6>
+        <span class="badge bg-light text-dark border" id="tableCountBadge">0 matching records</span>
+      </div>
+      <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th>Ticket Code</th>
+              <th>Direction</th>
+              <th>Amount</th>
+              <th>Agent</th>
+              <th>Cancelled Duration</th>
+              <th>Amount Panalites</th>
+              <th>Reason</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="recentTable">
+            <tr><td colspan="8" class="text-center py-4 text-muted">Loading records...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+        <small class="text-muted" id="pageInfo">Page 1 of 1</small>
+        <div class="d-flex align-items-center gap-2" id="paginationControls"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================= ALL RECORDS VIEW ========================= -->
+  <div id="recordsView" class="container-fluid" style="display:none;">
+
+    <div class="row align-items-center mb-3">
+      <div class="col-md-6 mb-2 mb-md-0">
+        <h3 class="fw-bold mb-0">All Cancellation Records</h3>
+        <small class="text-muted">Review, Edit, Delete, Approve / Reject each cancellation</small>
+      </div>
+      <div class="col-md-6 d-flex flex-wrap justify-content-md-end align-items-center gap-2">
+        <input type="text" id="searchBox" class="form-control form-control-sm" style="max-width: 220px;" placeholder="Search ticket, agent, route..." oninput="arApplySearch()">
+        <button class="btn btn-outline-primary btn-sm px-3" id="arFilterBtn" onclick="arToggleFilterPanel()">
+          🔍 Filters <span class="badge bg-primary ms-1" id="arFilterCount" style="display:none;">0</span>
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="showDashboardView()">‹ Dashboard</button>
+        <button class="btn btn-primary btn-sm px-3" onclick="fetchData()">↻ Refresh</button>
+        <button class="theme-toggle-btn" id="themeToggleBtnAR" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
+      </div>
+    </div>
+
+    <!-- ========================= FILTER PANEL ========================= -->
+    <div id="arFilterPanel" class="card card-chart p-3 bg-white mb-3" style="display:none;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0">🔍 Filter Records</h6>
+        <button class="btn btn-sm btn-outline-secondary" onclick="arToggleFilterPanel()">✕</button>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-3 col-sm-6">
+          <label class="small fw-semibold mb-1">From Date</label>
+          <input type="date" id="arStartDate" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label class="small fw-semibold mb-1">To Date</label>
+          <input type="date" id="arEndDate" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label class="small fw-semibold mb-1">Agent</label>
+          <select id="arAgentFilter" class="form-select form-select-sm">
+            <option value="">All Agents</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label class="small fw-semibold mb-1">Status</label>
+          <select id="arStatusFilter" class="form-select form-select-sm">
+            <option value="">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label class="small fw-semibold mb-1">Cancelled Duration</label>
+          <select id="arDurationFilter" class="form-select form-select-sm">
+            <option value="">All Durations</option>
+            <option value="Under 10 Minute">Under 10 Minute</option>
+            <option value="Under 30 Minute">Under 30 Minute</option>
+            <option value="Up 30 Minute">Up 30 Minute</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label class="small fw-semibold mb-1">Route</label>
+          <select id="arRouteFilter" class="form-select form-select-sm">
+            <option value="">All Routes</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label class="small fw-semibold mb-1">Min Amount ($)</label>
+          <input type="number" step="0.01" id="arMinAmount" class="form-control form-control-sm" placeholder="0">
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <label class="small fw-semibold mb-1">Max Amount ($)</label>
+          <input type="number" step="0.01" id="arMaxAmount" class="form-control form-control-sm" placeholder="No limit">
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <button class="btn btn-primary btn-sm px-3" onclick="arApplyFilters()">✓ Apply Filters</button>
+        <button class="btn btn-outline-secondary btn-sm px-3" onclick="arClearFilters()">↺ Clear All</button>
+      </div>
+
+      <div id="arFilterChips" class="d-flex flex-wrap gap-1 mt-3"></div>
+    </div>
+
+    <div class="card card-chart p-3 bg-white mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0">Records</h6>
+        <span class="badge bg-light text-dark border" id="arCountBadge">0 matching records</span>
+      </div>
+      <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th>Ticket Code</th>
+              <th>Direction</th>
+              <th>Amount</th>
+              <th>Agent</th>
+              <th>Cancelled Duration</th>
+              <th>Amount Panalites</th>
+              <th>Reason</th>
+              <th>Decision Reason</th>
+              <th>Status</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody id="recordsTable">
+            <tr><td colspan="10" class="text-center py-4 text-muted">Loading records...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+        <small class="text-muted" id="arPageInfo">Page 1 of 1</small>
+        <div class="d-flex align-items-center gap-2" id="arPaginationControls"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================= TELEGRAM SERVICE MODAL ========================= -->
+  <div id="tgModal" class="tg-backdrop" style="display:none;" onclick="if(event.target===this) closeTelegramModal()">
+    <div class="tg-modal">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">✈ Telegram Bot Service</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="closeTelegramModal()">✕</button>
+      </div>
+      <div class="small text-muted mb-3" id="tgStatusLine">Checking connection...</div>
+      <div class="mb-3">
+        <label class="small fw-semibold mb-1">Bot Token</label>
+        <input type="password" id="tgToken" class="form-control form-control-sm" placeholder="123456789:AAH..." autocomplete="off">
+        <div class="small text-muted mt-1" id="tgTokenHint">Create a bot with @BotFather and paste the token here.</div>
+      </div>
+      <div class="mb-2">
+        <label class="small fw-semibold mb-1">Chat ID</label>
+        <div class="d-flex gap-2">
+          <input type="text" id="tgChatId" class="form-control form-control-sm" placeholder="123456789 or -1001234567890" autocomplete="off">
+          <button class="btn btn-outline-secondary btn-sm text-nowrap" onclick="tgFindChat()">Find ID</button>
+        </div>
+        <div class="small text-muted mt-1">Send /start to your bot first, then press "Find ID".</div>
+        <div id="tgChatList"></div>
+      </div>
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" id="tgNotify">
+        <label class="form-check-label small" for="tgNotify">Send a message when a record is Approved / Rejected / Deleted</label>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <button class="btn btn-telegram btn-sm px-3" id="tgSaveBtn" onclick="tgSave()">Save &amp; Connect</button>
+        <button class="btn btn-success btn-sm px-3" id="tgSummaryBtn" onclick="tgSendSummary()">Send Summary Now</button>
+        <button class="btn btn-outline-primary btn-sm px-3" id="tgWebhookBtn" onclick="tgConnectWebhook()">Connect Webhook</button>
+        <button class="btn btn-outline-danger btn-sm px-3" id="tgDisconnectBtn" onclick="tgDisconnect()">Disconnect</button>
+      </div>
+      <div id="tgMsg" class="tg-msg"></div>
+    </div>
+  </div>
+
+
+  <!-- ========================= PENDING ALERT MODAL ========================= -->
+  <div id="pendingAlertModal" class="tg-backdrop" style="display:none;" onclick="if(event.target===this) closePendingAlertModal()">
+    <div class="tg-modal" style="max-width:480px;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">📢 Telegram Pending Alert</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="closePendingAlertModal()">✕</button>
+      </div>
+      <p class="small text-muted">Send pending records for the selected date range now, or schedule a one-time automatic alert.</p>
+      <div class="row g-2 mb-3">
+        <div class="col-6"><label class="small fw-semibold mb-1" for="pendingAlertFromDate">From date</label><input type="date" id="pendingAlertFromDate" class="form-control" value="2026-10-25"></div>
+        <div class="col-6"><label class="small fw-semibold mb-1" for="pendingAlertToDate">To date</label><input type="date" id="pendingAlertToDate" class="form-control" value="2026-10-25"></div>
+      </div>
+      <div class="mb-3">
+        <label class="small fw-semibold mb-1" for="pendingAlertDirection">Direction</label>
+        <select id="pendingAlertDirection" class="form-select"><option value="all">All Directions</option></select>
+      </div>
+      <div class="mb-3">
+        <label class="small fw-semibold mb-1" for="pendingAlertCategory">Category</label>
+        <select id="pendingAlertCategory" class="form-select">
+          <option value="all">📋 All Pending Categories</option>
+          <option value="under10">🟢 Under 10 Minute</option>
+          <option value="under30">🟡 Under 30 Minute</option>
+          <option value="over30">🔴 30 Minute Up</option>
+        </select>
+      </div>
+      <div class="border rounded p-3 mb-3">
+        <div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="pendingAlertAutoEnabled" onchange="togglePendingAlertScheduleFields()"><label class="form-check-label small fw-semibold" for="pendingAlertAutoEnabled">⏰ Send automatically at a chosen date and time</label></div>
+        <div id="pendingAlertScheduleFields" style="display:none"><label class="small fw-semibold mb-1" for="pendingAlertSendAt">Automatic send date &amp; time</label><input type="datetime-local" id="pendingAlertSendAt" class="form-control"><div class="small text-muted mt-1">Runs once. Apps Script may send it about 1 minute after the selected time.</div><button class="btn btn-outline-primary btn-sm mt-2" id="pendingAlertScheduleBtn" onclick="schedulePendingAlertFromDashboard()">⏰ Schedule Auto Alert</button></div>
+      </div>
+      <div id="pendingAlertMessage" class="small mb-3"></div>
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-danger px-3" id="pendingAlertSendBtn" onclick="sendPendingAlertFromDashboard()">📢 Send Alert Now</button>
+        <button class="btn btn-outline-secondary" onclick="closePendingAlertModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================= EDIT RECORD MODAL ========================= -->
+  <div id="editModal" class="tg-backdrop" style="display:none;" onclick="if(event.target===this) closeEditModal()">
+    <div class="tg-modal" style="max-width: 480px;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">✎ Edit Record</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="closeEditModal()">✕</button>
+      </div>
+      <div class="mb-3">
+        <label class="small fw-semibold mb-1">Ticket Code</label>
+        <input type="text" id="editTicket" class="form-control form-control-sm" readonly>
+      </div>
+      <div class="mb-3">
+        <label class="small fw-semibold mb-1">Direction</label>
+        <input type="text" id="editDirection" class="form-control form-control-sm">
+      </div>
+      <div class="mb-3">
+        <label class="small fw-semibold mb-1">Amount ($)</label>
+        <input type="number" step="0.01" id="editAmount" class="form-control form-control-sm">
+      </div>
+      <div class="mb-3">
+        <label class="small fw-semibold mb-1">Cancelled Duration</label>
+        <select id="editDuration" class="form-select form-select-sm">
+          <option value="Under 10 Minute">Under 10 Minute</option>
+          <option value="Under 30 Minute">Under 30 Minute</option>
+          <option value="Up 30 Minute">Up 30 Minute</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="small fw-semibold mb-1">Reason</label>
+        <input type="text" id="editReason" class="form-control form-control-sm">
+      </div>
+      <div id="editMsg" class="tg-msg"></div>
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-primary btn-sm px-3" id="editSaveBtn" onclick="saveEditRecord()">Save Changes</button>
+        <button class="btn btn-outline-secondary btn-sm px-3" onclick="closeEditModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================= REASON PROMPT MODAL ========================= -->
+  <div id="reasonModal" class="tg-backdrop" style="display:none;" onclick="if(event.target===this) closeReasonModal()">
+    <div class="tg-modal" style="max-width: 440px;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0" id="reasonModalTitle">Reason</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="closeReasonModal()">✕</button>
+      </div>
+      <p class="small text-muted mb-2" id="reasonModalDesc">Please enter a reason for this decision.</p>
+      <textarea id="reasonText" class="form-control form-control-sm" rows="3" placeholder="Enter reason here..."></textarea>
+      <div id="reasonMsg" class="tg-msg"></div>
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-sm px-3" id="reasonConfirmBtn" onclick="confirmReasonDecision()">Confirm</button>
+        <button class="btn btn-outline-secondary btn-sm px-3" onclick="closeReasonModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================= DELETE CONFIRM MODAL ========================= -->
+  <div id="deleteModal" class="tg-backdrop" style="display:none;" onclick="if(event.target===this) closeDeleteModal()">
+    <div class="tg-modal" style="max-width: 440px;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">🗑️ Delete Record</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="closeDeleteModal()">✕</button>
+      </div>
+      <p class="small text-muted mb-2">Are you sure you want to permanently delete this record from the Sheet?</p>
+      <div class="alert alert-warning small py-2 mb-2">
+        <strong id="deleteTicketLabel"></strong><br>
+        <span id="deleteRouteLabel" class="text-muted"></span>
+      </div>
+      <p class="small text-danger mb-2"><b>This action cannot be undone.</b></p>
+      <div id="deleteMsg" class="tg-msg"></div>
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-danger btn-sm px-3" id="deleteConfirmBtn" onclick="confirmDeleteRecord()">🗑️ Yes, Delete</button>
+        <button class="btn btn-outline-secondary btn-sm px-3" onclick="closeDeleteModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    Chart.register(ChartDataLabels);
+
+    let allRecords = [];
+    let selectedAgent = null;
+    let selectedDuration = null;
+    let selectedRoute = null;
+    let selectedStatus = null;
+
+    let durationChartInstance = null;
+    let agentChartInstance = null;
+    let dateLineChartInstance = null;
+    let monthlyCompareChartInstance = null;
+    let selectedTrendDate = null;
+
+    let currentFilteredRecords = [];
+    let currentPage = 1;
+    let pageSize = 20;
+
+    let arFilteredRecords = [];
+    let arCurrentPage = 1;
+    let arPageSize = 20;
+
+    // ============================================================
+    // FIXED duration labels + colors — never change on click
+    // ============================================================
+    const FIXED_DURATION_LABELS = ['Under 10 Minute', 'Under 30 Minute', 'Up 30 Minute'];
+    const FIXED_DURATION_COLORS = ['#20c997', '#ffc107', '#dc3545'];
+    const DURATION_OFFSET = 12;
+    const DURATION_BORDER = '#f59e0b';
+    const FAINT_COLOR = 'rgba(148,163,184,0.18)';
+
+    // ----- Dark / Light Theme -----
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const icon = theme === 'dark' ? '☀️' : '🌙';
+      const t1 = document.getElementById('themeToggleBtn');
+      const t2 = document.getElementById('themeToggleBtnAR');
+      if (t1) t1.innerText = icon;
+      if (t2) t2.innerText = icon;
+      localStorage.setItem('dashboardTheme', theme);
+      if (allRecords.length > 0) applyFilters();
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+
+    function getThemeColors() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      return {
+        isDark,
+        tick: isDark ? '#cbd5e1' : '#495057',
+        grid: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+        legend: isDark ? '#e2e8f0' : '#333333'
+      };
+    }
+
+    (function initTheme() {
+      const saved = localStorage.getItem('dashboardTheme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+      window.addEventListener('DOMContentLoaded', () => {
+        const icon = saved === 'dark' ? '☀️' : '🌙';
+        const t1 = document.getElementById('themeToggleBtn');
+        const t2 = document.getElementById('themeToggleBtnAR');
+        if (t1) t1.innerText = icon;
+        if (t2) t2.innerText = icon;
+      });
+    })();
+
+    function showRecordsView() {
+      document.getElementById('dashboardView').style.display = 'none';
+      document.getElementById('recordsView').style.display = '';
+      arApplySearch();
+    }
+
+    function showDashboardView() {
+      document.getElementById('recordsView').style.display = 'none';
+      document.getElementById('dashboardView').style.display = '';
+      applyFilters();
+    }
+
+
+    function fetchData() {
+      google.script.run
+        .withSuccessHandler(res => {
+          allRecords = res.records || [];
+          populateDefaultDates();
+          applyFilters();
+          arPopulateFilterDropdowns();
+          arApplySearch();
+          populateCompareYears();
+          if (document.getElementById('monthlyComparison')?.style.display !== 'none') renderMonthlyComparison();
+        })
+        .withFailureHandler(err => alert("កំហុស: " + err.message))
+        .getRawDashboardData();
+    }
+
+    // ----- Monthly comparison -----
+    function toggleMonthlyComparison(forceOpen) {
+      const panel = document.getElementById('monthlyComparison');
+      const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : panel.style.display === 'none';
+      panel.style.display = shouldOpen ? '' : 'none';
+      if (shouldOpen) {
+        populateCompareYears();
+        renderMonthlyComparison();
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function populateCompareYears() {
+      const select = document.getElementById('compareYear');
+      if (!select) return;
+      const years = [...new Set((allRecords || []).map(r => String(r.date || '').slice(0, 4)).filter(y => /^\d{4}$/.test(y)))].sort();
+      const currentYear = String(new Date().getFullYear());
+      if (!years.includes(currentYear)) years.push(currentYear);
+      years.sort();
+      const previous = select.value;
+      select.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+      select.value = years.includes(previous) ? previous : (years.includes(currentYear) ? currentYear : years[years.length - 1]);
+
+      // Default range = selected year (only if the user hasn't picked one yet)
+      const f = document.getElementById('compareFrom');
+      const t = document.getElementById('compareTo');
+      if (f && t && (!f.value || !t.value)) {
+        f.value = `${select.value}-01`;
+        t.value = `${select.value}-12`;
+      }
+    }
+
+    // Year dropdown = quick preset: sets From = Jan, To = Dec of that year
+    function setCompareYear() {
+      const y = document.getElementById('compareYear').value;
+      document.getElementById('compareFrom').value = `${y}-01`;
+      document.getElementById('compareTo').value = `${y}-12`;
+      renderMonthlyComparison();
+    }
+
+    function renderMonthlyComparison() {
+      const select = document.getElementById('compareYear');
+      if (!select) return;
+      if (!select.options.length) populateCompareYears();
+
+      const fromEl = document.getElementById('compareFrom');
+      const toEl = document.getElementById('compareTo');
+      const year = select.value || String(new Date().getFullYear());
+      const from = fromEl.value || `${year}-01`;
+      const to = toEl.value || `${year}-12`;
+
+      let [fy, fm] = from.split('-').map(Number);
+      let [ty, tm] = to.split('-').map(Number);
+      if (fy * 12 + fm > ty * 12 + tm) { [fy, fm, ty, tm] = [ty, tm, fy, fm]; } // swap if reversed
+
+      // Build the list of months between From and To (max 60 months)
+      const months = [];
+      for (let y = fy, m = fm; y * 12 + m <= ty * 12 + tm && months.length < 60; ) {
+        months.push({
+          key: `${y}-${String(m).padStart(2, '0')}`,
+          label: new Date(y, m - 1, 1).toLocaleString(undefined, { month: 'short', year: 'numeric' }),
+          count: 0, amount: 0, penalty: 0
+        });
+        if (++m > 12) { m = 1; y++; }
+      }
+
+      (allRecords || []).forEach(r => {
+        const key = String(r.date || '').slice(0, 7);
+        const month = months.find(m => m.key === key);
+        if (!month) return;
+        month.count++;
+        month.amount += Number(r.amount) || 0;
+        month.penalty += Number(r.penalty) || 0;
+      });
+
+      const money = n => '$' + Number(n || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      const signed = n => (n > 0 ? '+' : '') + Number(n || 0).toLocaleString(undefined, {maximumFractionDigits: 2});
+      const pct = (now, before) => before === 0 ? (now === 0 ? '0%' : 'New') : `${((now - before) / Math.abs(before) * 100) > 0 ? '+' : ''}${((now - before) / Math.abs(before) * 100).toFixed(1)}%`;
+      document.getElementById('compareTotalCount').textContent = months.reduce((a, m) => a + m.count, 0).toLocaleString();
+      document.getElementById('compareTotalAmount').textContent = money(months.reduce((a, m) => a + m.amount, 0));
+      document.getElementById('compareTotalPenalty').textContent = money(months.reduce((a, m) => a + m.penalty, 0));
+      const body = document.getElementById('monthlyCompareTable');
+      body.innerHTML = months.map((m, i) => {
+        const prev = i ? months[i - 1] : null;
+        const countDiff = prev ? m.count - prev.count : null;
+        const amountDiff = prev ? m.amount - prev.amount : null;
+        const cls = n => n > 0 ? 'text-danger fw-semibold' : n < 0 ? 'text-success fw-semibold' : 'text-muted';
+        return `<tr><td><strong>${m.label}</strong></td><td class="text-end">${m.count.toLocaleString()}</td><td class="text-end">${money(m.amount)}</td><td class="text-end">${money(m.penalty)}</td><td class="text-end ${prev ? cls(countDiff) : 'text-muted'}">${prev ? `${signed(countDiff)} (${pct(m.count, prev.count)})` : '—'}</td><td class="text-end ${prev ? cls(amountDiff) : 'text-muted'}">${prev ? `${money(amountDiff)} (${pct(m.amount, prev.amount)})` : '—'}</td></tr>`;
+      }).join('');
+      const theme = getThemeColors();
+      const canvas = document.getElementById('monthlyCompareChart');
+      if (!canvas) return;
+      const data = {
+        labels: months.map(m => m.label),
+        datasets: [
+          { label: 'Cancellations', data: months.map(m => m.count), backgroundColor: '#2563eb', yAxisID: 'yCount', borderRadius: 4 },
+          { label: 'Lost Value ($)', data: months.map(m => Number(m.amount.toFixed(2))), type: 'line', borderColor: '#f97316', backgroundColor: '#f97316', yAxisID: 'yMoney', tension: .25, pointRadius: 3 },
+          { label: 'Penalties ($)', data: months.map(m => Number(m.penalty.toFixed(2))), type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'yMoney', tension: .25, pointRadius: 3 }
+        ]
+      };
+      if (monthlyCompareChartInstance) {
+        monthlyCompareChartInstance.data = data;
+        monthlyCompareChartInstance.options.scales.x.ticks.color = theme.tick;
+        monthlyCompareChartInstance.options.scales.yCount.ticks.color = theme.tick;
+        monthlyCompareChartInstance.options.scales.yMoney.ticks.color = theme.tick;
+        monthlyCompareChartInstance.options.plugins.legend.labels.color = theme.legend;
+        monthlyCompareChartInstance.update('none');
+      } else {
+        monthlyCompareChartInstance = new Chart(canvas.getContext('2d'), {
+          type: 'bar', data, options: { responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { position: 'top', labels: { color: theme.legend } },
+              // Show numeric data labels in WHITE on this monthly comparison chart only.
+              datalabels: {
+                color: '#ffffff',
+                textStrokeColor: 'rgba(15, 23, 42, 0.35)',
+                textStrokeWidth: 1,
+                font: { weight: 'bold', size: 10 },
+                formatter: value => value == null || value === 0 ? '' : Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 })
+              },
+              tooltip: { callbacks: { label: ctx => ctx.dataset.yAxisID === 'yMoney' ? `${ctx.dataset.label}: ${money(ctx.parsed.y)}` : `${ctx.dataset.label}: ${Number(ctx.parsed.y || 0).toLocaleString()}` } } },
+            scales: { x: { ticks: { color: theme.tick }, grid: { color: theme.grid } },
+              yCount: { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Cancellations', color: theme.tick }, ticks: { color: theme.tick, precision: 0 }, grid: { color: theme.grid } },
+              yMoney: { type: 'linear', position: 'right', beginAtZero: true, title: { display: true, text: 'Amount ($)', color: theme.tick }, ticks: { color: theme.tick, callback: value => '$' + Number(value).toLocaleString(), color: theme.tick }, grid: { drawOnChartArea: false } }
+            }
+          }
+        });
+      }
+    }
+
+    function populateDefaultDates() {
+      const validDates = allRecords.map(r => r.date).filter(Boolean).sort();
+      if (validDates.length > 0) {
+        document.getElementById('startDate').value = validDates[0];
+        document.getElementById('endDate').value = validDates[validDates.length - 1];
+      }
+    }
+
+    // Opens the browser print dialog; choose a printer or "Save as PDF".
+    function printDashboard() {
+      window.print();
+    }
+
+    function resetAllFilters() {
+      selectedAgent = null;
+      selectedDuration = null;
+      selectedRoute = null;
+      selectedStatus = null;
+      populateDefaultDates();
+      applyFilters();
+    }
+
+    function normStatus(s) {
+      const v = (s || 'Pending').toLowerCase();
+      if (v === 'approved') return 'Approved';
+      if (v === 'rejected') return 'Rejected';
+      return 'Pending';
+    }
+
+    function toggleStatusFilter(status) {
+      selectedStatus = (selectedStatus === status) ? null : status;
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const start = document.getElementById('startDate').value;
+      const end = document.getElementById('endDate').value;
+
+      const baseFiltered = allRecords.filter(item => {
+        if (start && item.date && item.date < start) return false;
+        if (end && item.date && item.date > end) return false;
+        if (selectedAgent && item.agent !== selectedAgent) return false;
+        if (selectedDuration && item.duration !== selectedDuration) return false;
+        if (selectedRoute && item.route !== selectedRoute) return false;
+        return true;
+      });
+
+      const filtered = selectedStatus
+        ? baseFiltered.filter(r => normStatus(r.status) === selectedStatus)
+        : baseFiltered;
+
+      renderFilterPills();
+      currentFilteredRecords = filtered;
+      currentPage = 1;
+      renderDashboard(filtered, baseFiltered);
+    }
+
+    function renderFilterPills() {
+      const container = document.getElementById('filterStatus');
+      container.innerHTML = '';
+
+      if (selectedAgent) {
+        container.innerHTML += `<span class="badge bg-primary filter-badge" onclick="selectedAgent=null; applyFilters();">Agent: ${selectedAgent} &times;</span>`;
+      }
+      if (selectedDuration) {
+        container.innerHTML += `<span class="badge bg-warning text-dark filter-badge" onclick="selectedDuration=null; applyFilters();">Timing: ${selectedDuration} &times;</span>`;
+      }
+      if (selectedRoute) {
+        container.innerHTML += `<span class="badge bg-info text-dark filter-badge" onclick="selectedRoute=null; applyFilters();">Route: ${selectedRoute} &times;</span>`;
+      }
+      if (selectedStatus) {
+        container.innerHTML += `<span class="badge bg-secondary filter-badge" onclick="selectedStatus=null; applyFilters();">Status: ${selectedStatus} &times;</span>`;
+      }
+    }
+
+    function renderDateLineChart(records) {
+      const daily = {};
+      (records || []).forEach(r => {
+        if (!r.date) return;
+        const key = String(r.date).slice(0, 10);
+        if (!daily[key]) daily[key] = { count: 0, amount: 0 };
+        daily[key].count += 1;
+        daily[key].amount += Number(r.amount) || 0;
+      });
+
+      const labels = Object.keys(daily).sort();
+      const countValues = labels.map(d => daily[d].count);
+      const amountValues = labels.map(d => Number(daily[d].amount.toFixed(2)));
+      const canvas = document.getElementById('dateLineChart');
+      if (!canvas) return;
+      const theme = getThemeColors();
+
+      const config = {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Cancellations', data: countValues,
+              yAxisID: 'yCount', borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.12)',
+              pointBackgroundColor: '#2563eb', pointRadius: 3, pointHoverRadius: 5,
+              borderWidth: 2.5, tension: 0.3, fill: false
+            },
+            {
+              label: 'Lost Value ($)', data: amountValues,
+              yAxisID: 'yAmount', borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.12)',
+              pointBackgroundColor: '#f97316', pointRadius: 3, pointHoverRadius: 5,
+              borderWidth: 2.5, tension: 0.3, fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+          onClick: (event, elements, chart) => {
+            const points = elements && elements.length ? elements : chart.getElementsAtEventForMode(event, 'index', { intersect: false }, true);
+            if (!points.length) return;
+            const pickedDate = chart.data.labels[points[0].index];
+            if (!pickedDate) return;
+            selectedTrendDate = String(pickedDate).slice(0, 10);
+            const pickedIndex = points[0].index;
+            const dailyCount = Number(chart.data.datasets[0].data[pickedIndex] || 0);
+            const dailyAmount = Number(chart.data.datasets[1].data[pickedIndex] || 0);
+            const status = document.getElementById('trendDateStatus');
+            if (status) status.textContent = `${selectedTrendDate} · ${dailyCount} cancellations · $${dailyAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} · loading records…`;
+            // Automatically filter the dashboard and scroll to the matching records.
+            viewSelectedTrendDate();
+          },
+          plugins: {
+            legend: { position: 'top', labels: { color: theme.legend, usePointStyle: true, boxWidth: 8 } },
+            tooltip: { callbacks: { title: items => items.length ? items[0].label : '', label: ctx =>
+              ctx.dataset.yAxisID === 'yAmount'
+                ? `${ctx.dataset.label}: $${Number(ctx.parsed.y || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+                : `${ctx.dataset.label}: ${Number(ctx.parsed.y || 0).toLocaleString()}`
+            } }
+          },
+          scales: {
+            x: { ticks: { color: theme.tick, maxRotation: 45, minRotation: 0, autoSkip: true, maxTicksLimit: 14 }, grid: { color: theme.grid } },
+            yCount: { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Cancellations', color: theme.tick }, ticks: { color: theme.tick, precision: 0 }, grid: { color: theme.grid } },
+            yAmount: { type: 'linear', position: 'right', beginAtZero: true, title: { display: true, text: 'Lost Value ($)', color: theme.tick }, ticks: { color: theme.tick, callback: value => '$' + Number(value).toLocaleString(), color: theme.tick }, grid: { drawOnChartArea: false } }
+          }
+        }
+      };
+
+      if (!dateLineChartInstance) {
+        dateLineChartInstance = new Chart(canvas.getContext('2d'), config);
+      } else {
+        dateLineChartInstance.data.labels = labels;
+        dateLineChartInstance.data.datasets[0].data = countValues;
+        dateLineChartInstance.data.datasets[1].data = amountValues;
+        dateLineChartInstance.options.plugins.legend.labels.color = theme.legend;
+        dateLineChartInstance.options.scales.x.ticks.color = theme.tick;
+        dateLineChartInstance.options.scales.x.grid.color = theme.grid;
+        dateLineChartInstance.options.scales.yCount.ticks.color = theme.tick;
+        dateLineChartInstance.options.scales.yCount.title.color = theme.tick;
+        dateLineChartInstance.options.scales.yCount.grid.color = theme.grid;
+        dateLineChartInstance.options.scales.yAmount.ticks.color = theme.tick;
+        dateLineChartInstance.options.scales.yAmount.title.color = theme.tick;
+        dateLineChartInstance.update('none');
+      }
+    }
+
+    function viewSelectedTrendDate() {
+      if (!selectedTrendDate) return;
+      document.getElementById('startDate').value = selectedTrendDate;
+      document.getElementById('endDate').value = selectedTrendDate;
+      // Keep other selected filters so the records remain consistent with the current dashboard view.
+      applyFilters();
+      const logsCard = document.getElementById('recentTable')?.closest('.card');
+      if (logsCard) logsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderDashboard(records, statusSource) {
+      statusSource = statusSource || records;
+
+      let totalAmount = 0;
+      let totalPenalty = 0;
+      let pendingCount = 0, approvedCount = 0, rejectedCount = 0;
+      const agentMap = {};
+      const durationMap = {
+        'Under 10 Minute': 0,
+        'Under 30 Minute': 0,
+        'Up 30 Minute': 0
+      };
+      const routeMap = {};
+
+      records.forEach(r => {
+        totalAmount += r.amount;
+        totalPenalty += (r.penalty || 0);
+        agentMap[r.agent] = (agentMap[r.agent] || 0) + 1;
+
+        if (durationMap[r.duration] !== undefined) {
+          durationMap[r.duration]++;
+        } else {
+          durationMap[r.duration] = (durationMap[r.duration] || 0) + 1;
+        }
+
+        routeMap[r.route] = (routeMap[r.route] || 0) + 1;
+      });
+
+      statusSource.forEach(r => {
+        const s = normStatus(r.status);
+        if (s === 'Approved') approvedCount++;
+        else if (s === 'Rejected') rejectedCount++;
+        else pendingCount++;
+      });
+
+      document.querySelectorAll('.status-item').forEach(el => {
+        el.classList.toggle('active-route', el.dataset.status === selectedStatus);
+      });
+
+      // KPIs
+      document.getElementById('kpiTotal').innerText = records.length.toLocaleString();
+      document.getElementById('kpiAmount').innerText = '$' + totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('kpiPenalty').innerText = '$' + totalPenalty.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('kpiAgents').innerText = Object.keys(agentMap).length;
+      document.getElementById('kpiPending').innerText = pendingCount.toLocaleString();
+      document.getElementById('kpiApproved').innerText = approvedCount.toLocaleString();
+      document.getElementById('kpiRejected').innerText = rejectedCount.toLocaleString();
+      document.getElementById('tableCountBadge').innerText = records.length + ' matching records';
+
+      // Date trend line: daily cancellation count and lost value.
+      renderDateLineChart(records);
+
+      // Top 5 Routes
+      const topRoutes = Object.entries(routeMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const topRouteElem = document.getElementById('topRoutesList');
+      topRouteElem.innerHTML = '';
+      if (topRoutes.length === 0) {
+        topRouteElem.innerHTML = '<span class="text-muted small">No route data</span>';
+      } else {
+        topRoutes.forEach(([routeName, count], idx) => {
+          const div = document.createElement('div');
+          const isAct = selectedRoute === routeName ? 'active-route' : '';
+          div.className = `route-item ${isAct}`;
+          div.innerHTML = `<span class="text-truncate" style="max-width: 82%;" title="${routeName}"><b>${idx + 1}.</b> ${routeName}</span> <span class="badge bg-light text-dark border">${count}</span>`;
+          div.onclick = () => {
+            selectedRoute = (selectedRoute === routeName) ? null : routeName;
+            applyFilters();
+          };
+          topRouteElem.appendChild(div);
+        });
+      }
+
+      // ============================================================
+      // 3. DONUT CHART — Only selected slice keeps its color
+      // ============================================================
+      const theme = getThemeColors();
+      const durationValues = FIXED_DURATION_LABELS.map(lbl => durationMap[lbl] || 0);
+
+      // ---- KEY: compute colors from selectedDuration ----
+      const colorArr = FIXED_DURATION_LABELS.map((lbl, i) => {
+        if (!selectedDuration) return FIXED_DURATION_COLORS[i];
+        return (selectedDuration === lbl) ? FIXED_DURATION_COLORS[i] : FAINT_COLOR;
+      });
+
+      const offsetArr = FIXED_DURATION_LABELS.map(lbl =>
+        (selectedDuration === lbl) ? DURATION_OFFSET : 0
+      );
+      const borderArr = FIXED_DURATION_LABELS.map(lbl =>
+        (selectedDuration === lbl) ? DURATION_BORDER : 'transparent'
+      );
+      const borderWidthArr = FIXED_DURATION_LABELS.map(lbl =>
+        (selectedDuration === lbl) ? 2 : 0
+      );
+
+      const durCanvas = document.getElementById('durationChart');
+
+      if (!durationChartInstance) {
+        // ---- CREATE (first time) ----
+        durationChartInstance = new Chart(durCanvas.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: FIXED_DURATION_LABELS,
+            datasets: [{
+              data: durationValues,
+              backgroundColor: colorArr,
+              borderColor: borderArr,
+              borderWidth: borderWidthArr,
+              offset: offsetArr,
+              hoverOffset: 6,
+              hoverBorderColor: 'transparent'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 400 },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: { boxWidth: 12, font: { size: 10 }, color: theme.legend }
+              },
+              datalabels: {
+                color: (ctx) => {
+                  if (!selectedDuration) return '#ffffff';
+                  const lbl = FIXED_DURATION_LABELS[ctx.dataIndex];
+                  return (selectedDuration === lbl) ? '#ffffff' : 'rgba(148,163,184,0.45)';
+                },
+                font: { weight: 'bold', size: 11 },
+                formatter: (val, ctx) => {
+                  const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                  if (val === 0 || total === 0) return '';
+                  const pct = Math.round((val / total) * 100);
+                  return `${val}\n(${pct}%)`;
+                },
+                textAlign: 'center'
+              }
+            },
+            onClick: (evt) => {
+              const points = durationChartInstance.getElementsAtEventForMode(
+                evt, 'nearest', { intersect: true }, false
+              );
+              if (points.length > 0) {
+                const clickedIdx = points[0].index;
+                const label = FIXED_DURATION_LABELS[clickedIdx];
+                if (!label) return;
+                selectedDuration = (selectedDuration === label) ? null : label;
+                applyFilters();
+              }
+            }
+          }
+        });
+      } else {
+        // ---- UPDATE IN PLACE (KEY: use colorArr, not FIXED_DURATION_COLORS) ----
+        durationChartInstance.data.datasets[0].data = durationValues;
+        durationChartInstance.data.datasets[0].backgroundColor = colorArr;
+        durationChartInstance.data.datasets[0].borderColor = borderArr;
+        durationChartInstance.data.datasets[0].borderWidth = borderWidthArr;
+        durationChartInstance.data.datasets[0].offset = offsetArr;
+        durationChartInstance.options.plugins.legend.labels.color = theme.legend;
+        durationChartInstance.update('none');
+      }
+
+      // ============================================================
+      // 4. BAR CHART — Top 10 Agents (in-place update)
+      // ============================================================
+      const topAgents = Object.entries(agentMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
+      const agentLabels = topAgents.map(x => x[0]);
+      const agentCounts = topAgents.map(x => x[1]);
+      const maxVal = agentCounts.length > 0 ? Math.max(...agentCounts) : 10;
+
+      const agentColors = agentLabels.map(name =>
+        (name === selectedAgent) ? '#ff5722' : '#0d6efd'
+      );
+
+      const agentCanvas = document.getElementById('agentChart');
+
+      const needRecreate =
+        !agentChartInstance ||
+        JSON.stringify(agentChartInstance.data.labels) !== JSON.stringify(agentLabels);
+
+      if (needRecreate) {
+        if (agentChartInstance) agentChartInstance.destroy();
+        agentChartInstance = new Chart(agentCanvas.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: agentLabels,
+            datasets: [{
+              data: agentCounts,
+              backgroundColor: agentColors,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 400 },
+            layout: { padding: { top: 25 } },
+            plugins: {
+              legend: { display: false },
+              datalabels: {
+                anchor: 'end',
+                align: 'top',
+                offset: 2,
+                color: theme.legend,
+                font: { weight: 'bold', size: 11 },
+                formatter: (val) => val > 0 ? val.toLocaleString() : ''
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                suggestedMax: maxVal * 1.15,
+                ticks: { color: theme.tick },
+                grid: { color: theme.grid }
+              },
+              x: {
+                ticks: { font: { size: 10 }, color: theme.tick },
+                grid: { color: theme.grid }
+              }
+            },
+            onClick: (evt) => {
+              const points = agentChartInstance.getElementsAtEventForMode(
+                evt, 'nearest', { intersect: true }, false
+              );
+              if (points.length > 0) {
+                const clickedIdx = points[0].index;
+                const agentName = agentChartInstance.data.labels[clickedIdx];
+                if (!agentName) return;
+                selectedAgent = (selectedAgent === agentName) ? null : agentName;
+                applyFilters();
+              }
+            }
+          }
+        });
+      } else {
+        agentChartInstance.data.datasets[0].data = agentCounts;
+        agentChartInstance.data.datasets[0].backgroundColor = agentColors;
+        agentChartInstance.options.plugins.datalabels.color = theme.legend;
+        agentChartInstance.options.scales.y.ticks.color = theme.tick;
+        agentChartInstance.options.scales.y.grid.color = theme.grid;
+        agentChartInstance.options.scales.x.ticks.color = theme.tick;
+        agentChartInstance.options.scales.x.grid.color = theme.grid;
+        agentChartInstance.update('none');
+      }
+
+      renderTableSection();
+    }
+
+    function renderTableSection() {
+      const tableBody = document.getElementById('recentTable');
+      tableBody.innerHTML = '';
+
+      const totalRecords = currentFilteredRecords.length;
+      const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const startIdx = (currentPage - 1) * pageSize;
+      const displayRows = currentFilteredRecords.slice(startIdx, startIdx + pageSize);
+
+      if (displayRows.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No matching records found.</td></tr>';
+      } else {
+        displayRows.forEach(row => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><code class="text-danger">${row.ticket}</code></td>
+            <td>${row.route}</td>
+            <td><strong>$${row.amount.toFixed(2)}</strong></td>
+            <td><span class="badge bg-light text-dark">${row.agent}</span></td>
+            <td><span class="badge ${row.duration.includes('Under 10') ? 'bg-success' : (row.duration.includes('Under 30') ? 'bg-warning text-dark' : 'bg-danger')}">${row.duration}</span></td>
+            <td><strong class="penalty-amount">$${(row.penalty || 0).toFixed(2)}</strong></td>
+            <td>${row.reason}</td>
+            <td>${statusBadgeHtml(row.status)}</td>
+          `;
+          tableBody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('pageInfo').innerText =
+        totalRecords === 0 ? 'Page 0 of 0' : `Page ${currentPage} of ${totalPages} (${totalRecords} records)`;
+
+      const controls = document.getElementById('paginationControls');
+      controls.innerHTML = '';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'pagination-wrap';
+
+      const makeBtn = (label, disabled, onClick, title) => {
+        const btn = document.createElement('button');
+        btn.className = 'page-btn';
+        btn.innerHTML = label;
+        btn.disabled = disabled;
+        btn.title = title || '';
+        btn.onclick = onClick;
+        return btn;
+      };
+
+      wrap.appendChild(makeBtn('«', currentPage <= 1, () => goToPage(1), 'First page'));
+      wrap.appendChild(makeBtn('‹', currentPage <= 1, () => goToPage(currentPage - 1), 'Previous page'));
+
+      const current = document.createElement('span');
+      current.className = 'page-current';
+      current.innerText = currentPage;
+      wrap.appendChild(current);
+
+      wrap.appendChild(makeBtn('›', currentPage >= totalPages, () => goToPage(currentPage + 1), 'Next page'));
+      wrap.appendChild(makeBtn('»', currentPage >= totalPages, () => goToPage(totalPages), 'Last page'));
+
+      controls.appendChild(wrap);
+
+      const select = document.createElement('select');
+      select.className = 'page-size-select';
+      [10, 20, 50, 100, 200].forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.innerText = 'Show ' + n;
+        if (n === pageSize) opt.selected = true;
+        select.appendChild(opt);
+      });
+      select.onchange = (e) => changePageSize(parseInt(e.target.value, 10));
+      controls.appendChild(select);
+    }
+
+    function changePageSize(newSize) {
+      pageSize = newSize;
+      currentPage = 1;
+      renderTableSection();
+    }
+
+    function goToPage(page) {
+      currentPage = page;
+      renderTableSection();
+      document.getElementById('recentTable').closest('.table-responsive').scrollTop = 0;
+    }
+
+    // ========================= ALL RECORDS VIEW LOGIC =========================
+    function statusBadgeHtml(status) {
+      const s = (status || 'Pending').toLowerCase();
+      if (s === 'approved') return '<span class="status-badge status-approved">Approved</span>';
+      if (s === 'rejected') return '<span class="status-badge status-rejected">Rejected</span>';
+      return '<span class="status-badge status-pending">Pending</span>';
+    }
+
+    // ========================= FILTERS =========================
+    let arFilters = {
+      startDate: '',
+      endDate: '',
+      agent: '',
+      status: '',
+      duration: '',
+      route: '',
+      minAmount: '',
+      maxAmount: ''
+    };
+
+    function arToggleFilterPanel() {
+      const panel = document.getElementById('arFilterPanel');
+      panel.style.display = (panel.style.display === 'none') ? '' : 'none';
+    }
+
+    function arPopulateFilterDropdowns() {
+      const agentSel = document.getElementById('arAgentFilter');
+      const routeSel = document.getElementById('arRouteFilter');
+      if (!agentSel || !routeSel) return;
+
+      const curAgent = agentSel.value;
+      const curRoute = routeSel.value;
+
+      agentSel.innerHTML = '<option value="">All Agents</option>';
+      routeSel.innerHTML = '<option value="">All Routes</option>';
+
+      const agents = [...new Set(allRecords.map(r => r.agent).filter(Boolean))].sort();
+      const routes = [...new Set(allRecords.map(r => r.route).filter(Boolean))].sort();
+
+      agents.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a;
+        opt.textContent = a;
+        agentSel.appendChild(opt);
+      });
+      routes.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r;
+        opt.textContent = r;
+        routeSel.appendChild(opt);
+      });
+
+      if (curAgent && agents.includes(curAgent)) agentSel.value = curAgent;
+      if (curRoute && routes.includes(curRoute)) routeSel.value = curRoute;
+    }
+
+    function arApplySearch() {
+      arApplyFilters();
+    }
+
+    function arApplyFilters() {
+      arFilters.startDate = document.getElementById('arStartDate').value;
+      arFilters.endDate = document.getElementById('arEndDate').value;
+      arFilters.agent = document.getElementById('arAgentFilter').value;
+      arFilters.status = document.getElementById('arStatusFilter').value;
+      arFilters.duration = document.getElementById('arDurationFilter').value;
+      arFilters.route = document.getElementById('arRouteFilter').value;
+      arFilters.minAmount = document.getElementById('arMinAmount').value;
+      arFilters.maxAmount = document.getElementById('arMaxAmount').value;
+
+      const box = document.getElementById('searchBox');
+      const q = box ? box.value.trim().toLowerCase() : '';
+
+      arFilteredRecords = allRecords.filter(r => {
+        if (q) {
+          const hit =
+            (r.ticket || '').toLowerCase().includes(q) ||
+            (r.agent || '').toLowerCase().includes(q) ||
+            (r.route || '').toLowerCase().includes(q);
+          if (!hit) return false;
+        }
+        if (arFilters.startDate && r.date && r.date < arFilters.startDate) return false;
+        if (arFilters.endDate && r.date && r.date > arFilters.endDate) return false;
+        if (arFilters.agent && r.agent !== arFilters.agent) return false;
+        if (arFilters.status && normStatus(r.status) !== arFilters.status) return false;
+        if (arFilters.duration && r.duration !== arFilters.duration) return false;
+        if (arFilters.route && r.route !== arFilters.route) return false;
+        if (arFilters.minAmount !== '' && r.amount < parseFloat(arFilters.minAmount)) return false;
+        if (arFilters.maxAmount !== '' && r.amount > parseFloat(arFilters.maxAmount)) return false;
+        return true;
+      });
+
+      arCurrentPage = 1;
+      arRenderTable();
+      arUpdateFilterChips();
+    }
+
+    function arClearFilters() {
+      document.getElementById('arStartDate').value = '';
+      document.getElementById('arEndDate').value = '';
+      document.getElementById('arAgentFilter').value = '';
+      document.getElementById('arStatusFilter').value = '';
+      document.getElementById('arDurationFilter').value = '';
+      document.getElementById('arRouteFilter').value = '';
+      document.getElementById('arMinAmount').value = '';
+      document.getElementById('arMaxAmount').value = '';
+      arApplyFilters();
+    }
+
+    function arUpdateFilterChips() {
+      const container = document.getElementById('arFilterChips');
+      const countBadge = document.getElementById('arFilterCount');
+      if (!container || !countBadge) return;
+      container.innerHTML = '';
+
+      const active = [];
+
+      if (arFilters.startDate || arFilters.endDate) {
+        const label = 'Date: ' + (arFilters.startDate || '…') + ' → ' + (arFilters.endDate || '…');
+        active.push({ key: 'date', label });
+      }
+      if (arFilters.agent) active.push({ key: 'agent', label: 'Agent: ' + arFilters.agent });
+      if (arFilters.status) active.push({ key: 'status', label: 'Status: ' + arFilters.status });
+      if (arFilters.duration) active.push({ key: 'duration', label: 'Timing: ' + arFilters.duration });
+      if (arFilters.route) active.push({ key: 'route', label: 'Route: ' + arFilters.route });
+      if (arFilters.minAmount !== '') active.push({ key: 'minAmount', label: 'Min $: ' + arFilters.minAmount });
+      if (arFilters.maxAmount !== '') active.push({ key: 'maxAmount', label: 'Max $: ' + arFilters.maxAmount });
+
+      countBadge.style.display = active.length ? 'inline-block' : 'none';
+      countBadge.textContent = active.length;
+
+      active.forEach(f => {
+        const chip = document.createElement('span');
+        chip.className = 'badge bg-primary filter-badge';
+        chip.innerHTML = f.label + ' &times;';
+        chip.onclick = () => {
+          if (f.key === 'date') {
+            document.getElementById('arStartDate').value = '';
+            document.getElementById('arEndDate').value = '';
+          } else if (f.key === 'agent') document.getElementById('arAgentFilter').value = '';
+          else if (f.key === 'status') document.getElementById('arStatusFilter').value = '';
+          else if (f.key === 'duration') document.getElementById('arDurationFilter').value = '';
+          else if (f.key === 'route') document.getElementById('arRouteFilter').value = '';
+          else if (f.key === 'minAmount') document.getElementById('arMinAmount').value = '';
+          else if (f.key === 'maxAmount') document.getElementById('arMaxAmount').value = '';
+          arApplyFilters();
+        };
+        container.appendChild(chip);
+      });
+    }
+
+    function arRenderTable() {
+      const tableBody = document.getElementById('recordsTable');
+      if (!tableBody) return;
+      tableBody.innerHTML = '';
+
+      const totalRecords = arFilteredRecords.length;
+      document.getElementById('arCountBadge').innerText = totalRecords + ' matching records';
+
+      const totalPages = Math.max(1, Math.ceil(totalRecords / arPageSize));
+      if (arCurrentPage > totalPages) arCurrentPage = totalPages;
+      if (arCurrentPage < 1) arCurrentPage = 1;
+
+      const startIdx = (arCurrentPage - 1) * arPageSize;
+      const displayRows = arFilteredRecords.slice(startIdx, startIdx + arPageSize);
+
+      if (displayRows.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No matching records found.</td></tr>';
+      } else {
+        displayRows.forEach(row => {
+          const tr = document.createElement('tr');
+          const isPending = (row.status || 'Pending').toLowerCase() === 'pending';
+          tr.innerHTML = `
+            <td><code class="text-danger">${row.ticket}</code></td>
+            <td>${row.route}</td>
+            <td><strong>$${row.amount.toFixed(2)}</strong></td>
+            <td><span class="badge bg-light text-dark">${row.agent}</span></td>
+            <td><span class="badge ${row.duration.includes('Under 10') ? 'bg-success' : (row.duration.includes('Under 30') ? 'bg-warning text-dark' : 'bg-danger')}">${row.duration}</span></td>
+            <td><strong class="penalty-amount">$${(row.penalty || 0).toFixed(2)}</strong></td>
+            <td>${row.reason}</td>
+            <td class="small text-muted" id="dreason-${row.rowIndex}">${row.decisionReason || '-'}</td>
+            <td><span id="status-${row.rowIndex}">${statusBadgeHtml(row.status)}</span></td>
+            <td class="text-end">
+              <div class="d-flex gap-1 justify-content-end">
+                <button class="btn btn-sm btn-edit" onclick="arEditRecord(${row.rowIndex})" title="Edit record">✎</button>
+                <button class="btn btn-sm btn-delete" onclick="arAskDelete(${row.rowIndex})" title="Delete record">🗑️</button>
+                <button class="btn btn-sm btn-approve" id="approve-${row.rowIndex}" ${!isPending ? 'disabled' : ''} onclick="arDecideWithReason(${row.rowIndex}, 'Approved')">✓</button>
+                <button class="btn btn-sm btn-reject" id="reject-${row.rowIndex}" ${!isPending ? 'disabled' : ''} onclick="arDecideWithReason(${row.rowIndex}, 'Rejected')">✕</button>
+              </div>
+            </td>
+          `;
+          tableBody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('arPageInfo').innerText =
+        totalRecords === 0 ? 'Page 0 of 0' : `Page ${arCurrentPage} of ${totalPages} (${totalRecords} records)`;
+
+      arRenderPagination(totalPages);
+    }
+
+    function arRenderPagination(totalPages) {
+      const controls = document.getElementById('arPaginationControls');
+      controls.innerHTML = '';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'pagination-wrap';
+
+      const makeBtn = (label, disabled, onClick) => {
+        const btn = document.createElement('button');
+        btn.className = 'page-btn';
+        btn.innerHTML = label;
+        btn.disabled = disabled;
+        btn.onclick = onClick;
+        return btn;
+      };
+
+      wrap.appendChild(makeBtn('«', arCurrentPage <= 1, () => arGoToPage(1)));
+      wrap.appendChild(makeBtn('‹', arCurrentPage <= 1, () => arGoToPage(arCurrentPage - 1)));
+
+      const current = document.createElement('span');
+      current.className = 'page-current';
+      current.innerText = arCurrentPage;
+      wrap.appendChild(current);
+
+      wrap.appendChild(makeBtn('›', arCurrentPage >= totalPages, () => arGoToPage(arCurrentPage + 1)));
+      wrap.appendChild(makeBtn('»', arCurrentPage >= totalPages, () => arGoToPage(totalPages)));
+
+      controls.appendChild(wrap);
+
+      const select = document.createElement('select');
+      select.className = 'page-size-select';
+      [10, 20, 50, 100, 200].forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.innerText = 'Show ' + n;
+        if (n === arPageSize) opt.selected = true;
+        select.appendChild(opt);
+      });
+      select.onchange = (e) => { arPageSize = parseInt(e.target.value, 10); arCurrentPage = 1; arRenderTable(); };
+      controls.appendChild(select);
+    }
+
+    function arGoToPage(page) {
+      arCurrentPage = page;
+      arRenderTable();
+    }
+
+    // ========================= EDIT RECORD =========================
+    let editRowIndex = null;
+
+    function arEditRecord(rowIndex) {
+      const rec = allRecords.find(r => r.rowIndex === rowIndex);
+      if (!rec) return;
+
+      editRowIndex = rowIndex;
+      document.getElementById('editTicket').value = rec.ticket || '';
+      document.getElementById('editDirection').value = rec.route || '';
+      document.getElementById('editAmount').value = rec.amount || 0;
+      document.getElementById('editDuration').value = rec.duration || 'Under 10 Minute';
+      document.getElementById('editReason').value = (rec.reason && rec.reason !== '-') ? rec.reason : '';
+
+      const msg = document.getElementById('editMsg');
+      msg.className = 'tg-msg';
+      msg.textContent = '';
+
+      document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').style.display = 'none';
+      editRowIndex = null;
+    }
+
+    function editShowMsg(text, ok) {
+      const el = document.getElementById('editMsg');
+      el.className = 'tg-msg ' + (ok ? 'ok' : 'err');
+      el.textContent = text;
+    }
+
+    function saveEditRecord() {
+      if (editRowIndex === null) return;
+
+      const direction = document.getElementById('editDirection').value.trim();
+      const amount = parseFloat(document.getElementById('editAmount').value) || 0;
+      const duration = document.getElementById('editDuration').value;
+      const reason = document.getElementById('editReason').value.trim();
+
+      const btn = document.getElementById('editSaveBtn');
+      btn.disabled = true;
+      btn.innerText = 'Saving...';
+
+      const updates = [
+        { field: 'direction', value: direction },
+        { field: 'amount', value: amount },
+        { field: 'duration', value: duration },
+        { field: 'reason', value: reason }
+      ];
+
+      let completed = 0;
+      let hasError = false;
+
+      updates.forEach(u => {
+        google.script.run
+          .withSuccessHandler(() => {
+            completed++;
+            if (completed === updates.length && !hasError) {
+              const rec = allRecords.find(r => r.rowIndex === editRowIndex);
+              if (rec) {
+                rec.route = direction.split('(')[0].trim();
+                rec.amount = amount;
+                rec.duration = duration;
+                rec.reason = reason;
+                if (duration.indexOf('Under 10') !== -1) rec.penalty = amount * 0.10;
+                else if (duration.indexOf('Under 30') !== -1) rec.penalty = amount * 0.30;
+                else if (duration.indexOf('Up 30') !== -1 || duration.indexOf('Over 30') !== -1) rec.penalty = amount * 0.60;
+                else rec.penalty = 0;
+              }
+              btn.disabled = false;
+              btn.innerText = 'Save Changes';
+              editShowMsg('Record updated successfully.', true);
+              setTimeout(() => {
+                closeEditModal();
+                arPopulateFilterDropdowns();
+                arApplyFilters();
+                applyFilters();
+              }, 800);
+            }
+          })
+          .withFailureHandler(err => {
+            hasError = true;
+            btn.disabled = false;
+            btn.innerText = 'Save Changes';
+            editShowMsg('Error: ' + err.message, false);
+          })
+          .updateRecordData(editRowIndex, u.field, u.value);
+      });
+    }
+
+    // ========================= DELETE RECORD =========================
+    let deleteRowIndex = null;
+
+    function arAskDelete(rowIndex) {
+      const rec = allRecords.find(r => r.rowIndex === rowIndex);
+      if (!rec) return;
+
+      deleteRowIndex = rowIndex;
+      document.getElementById('deleteTicketLabel').innerText = '🎫 ' + (rec.ticket || '(no ticket)');
+      document.getElementById('deleteRouteLabel').innerText = '🚌 ' + (rec.route || '') + '  •  $' + (rec.amount || 0).toFixed(2);
+
+      const msg = document.getElementById('deleteMsg');
+      msg.className = 'tg-msg';
+      msg.textContent = '';
+
+      const btn = document.getElementById('deleteConfirmBtn');
+      btn.disabled = false;
+      btn.innerText = '🗑️ Yes, Delete';
+
+      document.getElementById('deleteModal').style.display = 'flex';
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').style.display = 'none';
+      deleteRowIndex = null;
+    }
+
+    function deleteShowMsg(text, ok) {
+      const el = document.getElementById('deleteMsg');
+      el.className = 'tg-msg ' + (ok ? 'ok' : 'err');
+      el.textContent = text;
+    }
+
+    function confirmDeleteRecord() {
+      if (deleteRowIndex === null) return;
+
+      const btn = document.getElementById('deleteConfirmBtn');
+      btn.disabled = true;
+      btn.innerText = 'Deleting...';
+
+      google.script.run
+        .withSuccessHandler(() => {
+          allRecords = allRecords.filter(r => r.rowIndex !== deleteRowIndex);
+          allRecords.forEach(r => {
+            if (r.rowIndex > deleteRowIndex) r.rowIndex -= 1;
+          });
+
+          btn.disabled = false;
+          closeDeleteModal();
+
+          arPopulateFilterDropdowns();
+          arApplyFilters();
+          applyFilters();
+
+          alert('🗑️ Record deleted successfully.');
+        })
+        .withFailureHandler(err => {
+          btn.disabled = false;
+          btn.innerText = '🗑️ Yes, Delete';
+          deleteShowMsg('Error: ' + err.message, false);
+        })
+        .deleteRecord(deleteRowIndex);
+    }
+
+    // ========================= REASON PROMPT =========================
+    let pendingDecision = null;
+
+    function arDecideWithReason(rowIndex, status) {
+      pendingDecision = { rowIndex: rowIndex, status: status };
+
+      const title = document.getElementById('reasonModalTitle');
+      const desc = document.getElementById('reasonModalDesc');
+      const confirmBtn = document.getElementById('reasonConfirmBtn');
+      const textarea = document.getElementById('reasonText');
+
+      if (status === 'Approved') {
+        title.innerText = '🟢 Approve — Enter Reason';
+        confirmBtn.className = 'btn btn-sm btn-approve px-3';
+        confirmBtn.innerText = '✓ Confirm Approve';
+      } else {
+        title.innerText = '🔴 Reject — Enter Reason';
+        confirmBtn.className = 'btn btn-sm btn-reject px-3';
+        confirmBtn.innerText = '✕ Confirm Reject';
+      }
+      desc.innerText = 'Please enter a reason for this ' + status.toLowerCase() + ' decision.';
+
+      textarea.value = '';
+      const msg = document.getElementById('reasonMsg');
+      msg.className = 'tg-msg';
+      msg.textContent = '';
+
+      document.getElementById('reasonModal').style.display = 'flex';
+      setTimeout(() => textarea.focus(), 100);
+    }
+
+    function closeReasonModal() {
+      document.getElementById('reasonModal').style.display = 'none';
+      pendingDecision = null;
+    }
+
+    function confirmReasonDecision() {
+      if (!pendingDecision) return;
+
+      const reason = document.getElementById('reasonText').value.trim();
+      const msgEl = document.getElementById('reasonMsg');
+
+      if (!reason) {
+        msgEl.className = 'tg-msg err';
+        msgEl.textContent = 'Reason is required. Please enter a reason.';
+        return;
+      }
+
+      const { rowIndex, status } = pendingDecision;
+      const btn = document.getElementById('reasonConfirmBtn');
+      btn.disabled = true;
+      btn.innerText = 'Saving...';
+
+      google.script.run
+        .withSuccessHandler(res => {
+          const statusEl = document.getElementById('status-' + rowIndex);
+          if (statusEl) statusEl.innerHTML = statusBadgeHtml(res.status);
+
+          const reasonEl = document.getElementById('dreason-' + rowIndex);
+          if (reasonEl) reasonEl.innerText = res.reason || '-';
+
+          const rec = allRecords.find(r => r.rowIndex === rowIndex);
+          if (rec) {
+            rec.status = res.status;
+            rec.decisionReason = res.reason;
+          }
+
+          btn.disabled = false;
+          closeReasonModal();
+          applyFilters();
+        })
+        .withFailureHandler(err => {
+          msgEl.className = 'tg-msg err';
+          msgEl.textContent = 'Error: ' + err.message;
+          btn.disabled = false;
+          btn.innerText = status === 'Approved' ? '✓ Confirm Approve' : '✕ Confirm Reject';
+        })
+        .updateRecordStatusWithReason(rowIndex, status, reason);
+    }
+
+    // ========================= TELEGRAM SERVICE LOGIC =========================
+    let tgConnected = false;
+
+    function tgShowMsg(text, ok) {
+      const el = document.getElementById('tgMsg');
+      el.className = 'tg-msg ' + (ok ? 'ok' : 'err');
+      el.textContent = text;
+    }
+
+    function tgClearMsg() {
+      const el = document.getElementById('tgMsg');
+      el.className = 'tg-msg';
+      el.textContent = '';
+    }
+
+    function tgSetBusy(busy) {
+      ['tgSaveBtn', 'tgSummaryBtn', 'tgDisconnectBtn'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.disabled = busy;
+      });
+    }
+
+    function tgApplyConfig(cfg) {
+      tgConnected = !!cfg.connected;
+      document.getElementById('tgLiveDot').classList.toggle('on', tgConnected);
+      document.getElementById('tgChatId').value = cfg.chatId || '';
+      document.getElementById('tgNotify').checked = !!cfg.notifyDecision;
+      document.getElementById('tgToken').value = '';
+      document.getElementById('tgToken').placeholder = cfg.hasToken ? cfg.tokenMasked + '  (leave empty to keep)' : '123456789:AAH...';
+      document.getElementById('tgStatusLine').innerHTML = tgConnected
+        ? '<span class="status-badge status-approved">Connected</span>'
+        : '<span class="status-badge status-pending">Not connected</span>';
+      document.getElementById('tgSummaryBtn').disabled = !tgConnected;
+      document.getElementById('tgDisconnectBtn').disabled = !(cfg.hasToken || cfg.chatId);
+    }
+
+    function refreshTelegramBadge() {
+      google.script.run
+        .withSuccessHandler(cfg => {
+          tgConnected = !!cfg.connected;
+          document.getElementById('tgLiveDot').classList.toggle('on', tgConnected);
+        })
+        .withFailureHandler(() => {})
+        .getTelegramConfig();
+    }
+
+    function openTelegramModal() {
+      tgClearMsg();
+      document.getElementById('tgChatList').innerHTML = '';
+      document.getElementById('tgModal').style.display = 'flex';
+      document.getElementById('tgStatusLine').innerText = 'Checking connection...';
+      google.script.run
+        .withSuccessHandler(tgApplyConfig)
+        .withFailureHandler(err => tgShowMsg('Error: ' + err.message, false))
+        .getTelegramConfig();
+    }
+
+    function closeTelegramModal() {
+      document.getElementById('tgModal').style.display = 'none';
+    }
+
+    function tgSave() {
+      tgClearMsg();
+      const token = document.getElementById('tgToken').value;
+      const chatId = document.getElementById('tgChatId').value;
+      const notify = document.getElementById('tgNotify').checked;
+      tgSetBusy(true);
+      document.getElementById('tgSaveBtn').innerText = 'Connecting...';
+
+      google.script.run
+        .withSuccessHandler(res => {
+          document.getElementById('tgSaveBtn').innerText = 'Save & Connect';
+          tgShowMsg('Connected to @' + res.botUsername + '. A test message was sent to Telegram.', true);
+          google.script.run.withSuccessHandler(tgApplyConfig).getTelegramConfig();
+          tgSetBusy(false);
+        })
+        .withFailureHandler(err => {
+          document.getElementById('tgSaveBtn').innerText = 'Save & Connect';
+          tgShowMsg(err.message, false);
+          tgSetBusy(false);
+          document.getElementById('tgSummaryBtn').disabled = !tgConnected;
+        })
+        .saveTelegramConfig(token, chatId, notify);
+    }
+
+    function tgFindChat() {
+      tgClearMsg();
+      const list = document.getElementById('tgChatList');
+      list.innerHTML = '<div class="small text-muted mt-2">Searching...</div>';
+      google.script.run
+        .withSuccessHandler(res => {
+          list.innerHTML = '';
+          if (!res.chats.length) {
+            list.innerHTML = '<div class="small text-muted mt-2">No chats found. Send /start to your bot, then try again.</div>';
+            return;
+          }
+          res.chats.forEach(c => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'tg-chat-item';
+            const left = document.createElement('span');
+            left.textContent = c.name + ' (' + c.type + ')';
+            const right = document.createElement('strong');
+            right.textContent = c.id;
+            btn.appendChild(left);
+            btn.appendChild(right);
+            btn.onclick = () => { document.getElementById('tgChatId').value = c.id; };
+            list.appendChild(btn);
+          });
+        })
+        .withFailureHandler(err => {
+          list.innerHTML = '';
+          tgShowMsg(err.message, false);
+        })
+        .findTelegramChatId(document.getElementById('tgToken').value);
+    }
+
+    function tgSendSummary() {
+      tgClearMsg();
+      const recs = currentFilteredRecords || [];
+      const agents = {}, routes = {};
+      let amount = 0, penalty = 0, pending = 0, approved = 0, rejected = 0;
+      recs.forEach(r => {
+        amount += r.amount;
+        penalty += (r.penalty || 0);
+        agents[r.agent] = true;
+        routes[r.route] = (routes[r.route] || 0) + 1;
+        const s = normStatus(r.status);
+        if (s === 'Approved') approved++;
+        else if (s === 'Rejected') rejected++;
+        else pending++;
+      });
+
+      const start = document.getElementById('startDate').value;
+      const end = document.getElementById('endDate').value;
+      const active = [];
+      if (selectedAgent) active.push('Agent: ' + selectedAgent);
+      if (selectedDuration) active.push('Timing: ' + selectedDuration);
+      if (selectedRoute) active.push('Route: ' + selectedRoute);
+      if (selectedStatus) active.push('Status: ' + selectedStatus);
+
+      const stats = {
+        period: (start || end) ? (start + ' → ' + end) : '',
+        filters: active.join(', '),
+        total: recs.length,
+        amount: amount,
+        penalty: penalty,
+        agents: Object.keys(agents).length,
+        pending: pending,
+        approved: approved,
+        rejected: rejected,
+        topRoutes: Object.entries(routes).sort((a, b) => b[1] - a[1]).slice(0, 5).map(x => ({ name: x[0], count: x[1] }))
+      };
+
+      tgSetBusy(true);
+      google.script.run
+        .withSuccessHandler(() => {
+          tgShowMsg('Summary sent to Telegram.', true);
+          tgSetBusy(false);
+        })
+        .withFailureHandler(err => {
+          tgShowMsg(err.message, false);
+          tgSetBusy(false);
+        })
+        .sendTelegramSummary(stats);
+    }
+
+    function tgDisconnect() {
+      if (!confirm('Disconnect Telegram and remove the saved token and chat ID?')) return;
+      tgClearMsg();
+      google.script.run
+        .withSuccessHandler(() => {
+          google.script.run.withSuccessHandler(tgApplyConfig).getTelegramConfig();
+          tgShowMsg('Disconnected.', true);
+        })
+        .withFailureHandler(err => tgShowMsg(err.message, false))
+        .disconnectTelegram();
+    }
+
+    window.onload = function () {
+      fetchData();
+      refreshTelegramBadge();
+    };
+  
+
+    function openPendingAlertModal() {
+      const modal = document.getElementById('pendingAlertModal');
+      document.getElementById('pendingAlertMessage').textContent = '';
+      document.getElementById('pendingAlertFromDate').value = '2026-10-25';
+      document.getElementById('pendingAlertToDate').value = '2026-10-25';
+      document.getElementById('pendingAlertCategory').value = 'all';
+      loadPendingAlertDirections();
+      document.getElementById('pendingAlertAutoEnabled').checked = false;
+      document.getElementById('pendingAlertSendAt').value = '';
+      togglePendingAlertScheduleFields();
+      modal.style.display = 'flex';
+    }
+
+    function closePendingAlertModal() { document.getElementById('pendingAlertModal').style.display = 'none'; }
+
+    function togglePendingAlertScheduleFields() {
+      const enabled = document.getElementById('pendingAlertAutoEnabled').checked;
+      document.getElementById('pendingAlertScheduleFields').style.display = enabled ? 'block' : 'none';
+      document.getElementById('pendingAlertSendBtn').style.display = enabled ? 'none' : 'inline-block';
+    }
+
+    function getPendingAlertFormValues() {
+      return {
+        fromDate: document.getElementById('pendingAlertFromDate').value,
+        toDate: document.getElementById('pendingAlertToDate').value,
+        category: document.getElementById('pendingAlertCategory').value,
+        direction: document.getElementById('pendingAlertDirection').value || 'all'
+      };
+    }
+
+    function loadPendingAlertDirections() {
+      const sel = document.getElementById('pendingAlertDirection');
+      if (!sel) return;
+      const current = sel.value || 'all';
+      google.script.run.withSuccessHandler(list => {
+        const values = Array.isArray(list) ? list : ['All Directions'];
+        sel.innerHTML = '';
+        values.forEach((v, i) => { const opt = document.createElement('option'); opt.value = i === 0 ? 'all' : v; opt.textContent = v; sel.appendChild(opt); });
+        if ([...sel.options].some(o => o.value === current)) sel.value = current;
+      }).withFailureHandler(err => console.warn('Could not load directions', err)).getPendingAlertDirections();
+    }
+
+    function sendPendingAlertFromDashboard() {
+      const v = getPendingAlertFormValues();
+      const msg = document.getElementById('pendingAlertMessage');
+      const btn = document.getElementById('pendingAlertSendBtn');
+      if (!v.fromDate || !v.toDate) { msg.textContent = 'Please select From Date and To Date.'; msg.className = 'small mb-3 text-danger'; return; }
+      if (v.fromDate > v.toDate) { msg.textContent = 'From Date cannot be after To Date.'; msg.className = 'small mb-3 text-danger'; return; }
+      btn.disabled = true; btn.textContent = 'Sending...';
+      msg.textContent = 'Preparing report and sending to Telegram...'; msg.className = 'small mb-3 text-muted';
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = '📢 Send Alert Now';
+        msg.textContent = 'Sent. Matching pending records: ' + res.count + '. Range: ' + res.fromDate + ' to ' + res.toDate + '.';
+        msg.className = 'small mb-3 text-success';
+      }).withFailureHandler(err => {
+        btn.disabled = false; btn.textContent = '📢 Send Alert Now';
+        msg.textContent = (err && err.message) ? err.message : String(err); msg.className = 'small mb-3 text-danger';
+      }).sendPendingAlertByDateRange(v.fromDate, v.toDate, v.category, v.direction);
+    }
+
+    function schedulePendingAlertFromDashboard() {
+      const v = getPendingAlertFormValues();
+      const sendAt = document.getElementById('pendingAlertSendAt').value;
+      const msg = document.getElementById('pendingAlertMessage');
+      const btn = document.getElementById('pendingAlertScheduleBtn');
+      if (!v.fromDate || !v.toDate) { msg.textContent = 'Please select From Date and To Date.'; msg.className = 'small mb-3 text-danger'; return; }
+      if (v.fromDate > v.toDate) { msg.textContent = 'From Date cannot be after To Date.'; msg.className = 'small mb-3 text-danger'; return; }
+      if (!sendAt) { msg.textContent = 'Please choose the automatic send date and time.'; msg.className = 'small mb-3 text-danger'; return; }
+      btn.disabled = true; btn.textContent = 'Scheduling...';
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = '⏰ Schedule Auto Alert';
+        msg.textContent = 'Scheduled once for ' + res.sendAt.replace('T',' ') + ' (' + res.timezone + '). Range: ' + res.fromDate + ' to ' + res.toDate + '.';
+        msg.className = 'small mb-3 text-success';
+      }).withFailureHandler(err => {
+        btn.disabled = false; btn.textContent = '⏰ Schedule Auto Alert';
+        msg.textContent = (err && err.message) ? err.message : String(err); msg.className = 'small mb-3 text-danger';
+      }).schedulePendingAlert(v.fromDate, v.toDate, v.category, sendAt, v.direction);
+    }
+
+
+
+    function tgConnectWebhook() {
+      tgClearMsg();
+      tgShowMsg('Connecting Telegram webhook...', true);
+      google.script.run
+        .withSuccessHandler(res => tgShowMsg('Webhook connected to the deployed /exec URL. Now send /pending to your bot.', true))
+        .withFailureHandler(err => tgShowMsg((err && err.message) ? err.message : String(err), false))
+        .connectPendingAlertWebhook();
+    }
+
+</script>
+</body>
+</html>
